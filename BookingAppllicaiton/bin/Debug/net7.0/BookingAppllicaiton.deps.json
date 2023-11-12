@@ -9,6 +9,7 @@
       "BookingAppllicaiton/1.0.0": {
         "dependencies": {
           "Hangfire": "1.8.6",
+          "Hangfire.AspNetCore": "1.8.6",
           "Hangfire.InMemory": "0.6.0",
           "Hangfire.MySqlStorage": "2.0.3",
           "Hangfire.Redis.StackExchange": "1.9.2",

@@ -14,4 +14,5 @@ public class ClassTable:BaseTable
     public virtual PackageTable? Package { set; get; }
     public string Address { set; get; }
     public int NumberOfPersons { set; get; }
+    public string Country { set; get; }
 }

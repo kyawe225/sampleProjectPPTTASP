@@ -1,15 +1,14 @@
-using System.Security.Cryptography;
+using System.Security.Claims;
 using BookingAppllicaiton.Context;
 using BookingAppllicaiton.Model;
 using BookingAppllicaiton.Tables;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace BookingAppllicaiton.Controllers;
 /// <summary>
-/// 1 is for booked
+/// userId is for booked
 /// 0 is for cancel
 /// 2 is for wait
 /// 3 is for checkin 
@@ -30,7 +29,7 @@ public class ClassController : ControllerBase
     [HttpGet]
     public IActionResult Index()
     {
-        List<ClassTable> classes = _context.Classes.ToList();
+        List<IGrouping<string, ClassTable>> classes = _context.Classes.GroupBy(p=> p.Country).ToList();
         return Ok(new
         {
             data = classes
@@ -40,12 +39,14 @@ public class ClassController : ControllerBase
     [HttpPost("{Id}")]
     public IActionResult Book(long Id, BookModel model)
     {
+        var claim = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier);
+        var userId = Convert.ToInt64(claim?.Value);
         if (ModelState.IsValid)
         {
             IEnumerable<Schedule>
                 schedules = _context.Schedules.Include(q=>q.RegisteredClass).Where(p => p.RegisteredClassId == Id).ToList(); //default userID
             
-            Schedule? schedule = schedules.Where(p => p.RegisteredClassId == Id && p.UserId == 1).FirstOrDefault();
+            Schedule? schedule = schedules.Where(p => p.RegisteredClassId == Id && p.UserId == userId).FirstOrDefault();
             if (model.booked)
             {
                 if (schedule != null)
@@ -74,16 +75,16 @@ public class ClassController : ControllerBase
                     message = "Class not found"
                 });
             }
-            PackageUser? packageUser=_context.PackageUsers.Where(p => p.UserId == 1).FirstOrDefault();
+            PackageUser? packageUser=_context.PackageUsers.Where(p => p.UserId == userId).FirstOrDefault();
             if (model.booked)
             {
                 int registerCount = schedules.Count();
                 bool wait = registerCount == classes.NumberOfPersons ? true : false;
                 _context.Schedules.Add(new()
                 {
-                    Type = wait ? (short)2 : (short)1,
+                    Type = wait ? (short)2 : (short)userId,
                     RegisteredClassId = Id,
-                    UserId = 1
+                    UserId = userId
                 });
                 
                 if (packageUser != null)
@@ -123,7 +124,9 @@ public class ClassController : ControllerBase
     [HttpPost]
     public IActionResult CheckIn(int Id)
     {
-        Schedule? schedule = _context.Schedules.Include(q=> q.RegisteredClass).Where(p => p.Id == Id && p.UserId == 1 && p.Type==(short)1).FirstOrDefault();
+        var claim = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier);
+        var userId = Convert.ToInt64(claim?.Value);
+        Schedule? schedule = _context.Schedules.Include(q=> q.RegisteredClass).Where(p => p.Id == Id && p.UserId == userId && p.Type==(short)userId).FirstOrDefault();
         if (schedule == null)
         {
             return Ok(new

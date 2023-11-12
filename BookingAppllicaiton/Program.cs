@@ -1,5 +1,7 @@
 using System.Text;
 using BookingAppllicaiton.Context;
+using BookingAppllicaiton.Jobs;
+using BookingAppllicaiton.Middlewares;
 using BookingAppllicaiton.Repository;
 using BookingAppllicaiton.Tables;
 using Hangfire;
@@ -95,6 +97,7 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
+    app.UseMiddleware<SwaggerUrlProtectorMiddleware>();
     app.UseSwaggerUI();
 }
 
@@ -107,28 +110,7 @@ app.MapControllers();
 
 app.UseHangfireDashboard("/hangFireDash");
 
-// BackgroundJob.Enqueue(() =>
-// {
-//     using (DatabaseContext context = new DatabaseContext())
-//     {
-//         IEnumerable<ClassTable> tmpclass=context.Classes.Where(p => p.EndDateTime > DateTime.Now).ToList();
-//         foreach (ClassTable classTable in tmpclass)
-//         {
-//             var schedules=context.Schedules.Where(p => p.RegisteredClassId == classTable.Id && (p.Type == 3 || p.Type == 1)).ToList();
-//             foreach (var i in schedules)
-//             {
-//                 i.Type = 4;
-//                 var j=context.PackageUsers.Where(p => p.UserId == i.UserId).FirstOrDefault();
-//                 if (j != null)
-//                 {
-//                     j.Credit += classTable.Credit;
-//                     context.Update(j);
-//                 }
-//
-//                 context.Update(i);
-//             }
-//             context.SaveChanges();
-//         }
-//     }
-// }, Cron.Hourly);
+GlobalConfiguration.Configuration.UseActivator(new HangFireActivator(app.Services));
+RecurringJob.AddOrUpdate<IRefund>(Guid.NewGuid().ToString(),(IRefund refund)=>refund.MakeAction(),Cron.Hourly);
+
 app.Run();

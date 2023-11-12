@@ -1,11 +1,12 @@
 using System.Security.Claims;
+using BookingAppllicaiton.facade;
 using BookingAppllicaiton.Repository;
 using BookingAppllicaiton.Tables;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BookingAppllicaiton.Controllers;
-
+[Authorize]
 [ApiController]
 [Route("/api/[controller]/[action]")]
 public class PackageController : ControllerBase
@@ -16,7 +17,7 @@ public class PackageController : ControllerBase
     {
         _context = context;
     }
-    [Authorize]
+
     [HttpGet]
     public IActionResult Index()
     {
@@ -26,7 +27,7 @@ public class PackageController : ControllerBase
             data = sample
         });
     }
-    [Authorize]
+
     [HttpPost("{Id}")]
     public IActionResult Purchase(int Id)
     {
@@ -38,10 +39,11 @@ public class PackageController : ControllerBase
             PackageUser packages = new PackageUser
             {
                 PackageId = Id,
-                UserId = 1,
+                UserId = Convert.ToInt64(claim?.Value),
                 Credit = pack.Credit
             };
             _context.SavePackageUser(packages);
+            Helper.PaymentCharge("name");
             return Ok(new
             {
                 message="You bought a package."

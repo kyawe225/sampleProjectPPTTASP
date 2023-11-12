@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using BookingAppllicaiton.Context;
+using BookingAppllicaiton.facade;
 using BookingAppllicaiton.Model;
 using BookingAppllicaiton.Tables;
 using Microsoft.AspNetCore.Authorization;
@@ -20,15 +21,32 @@ public class UserController:ControllerBase
         _context = context;
         _configuration = configuration;
     }
+    [AllowAnonymous]
     [HttpPost]
-    public IActionResult register(UserModel model)
+    public IActionResult register(RegisterModel model)
     {
         if (ModelState.IsValid)
         {
-            
+            User user = new User()
+            {
+                Address = model.address,
+                Email = model.email,
+                Password = model.password
+            };
+            _context.User.Add(user);
+            Helper.SendVerifyEmail(user);
+            _context.SaveChanges();
+            return Ok(new
+            {
+                message="Successfully Registered"
+            });
         }
-        return Ok();
+        return Ok(new
+        {
+            message="Successfully Not Registered"
+        });
     }
+    [AllowAnonymous]
     [HttpPost]
     public IActionResult login(LoginModel model)
     {

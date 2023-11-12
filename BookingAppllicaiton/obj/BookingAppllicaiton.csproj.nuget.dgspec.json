@@ -43,6 +43,10 @@
               "target": "Package",
               "version": "[1.8.6, )"
             },
+            "Hangfire.AspNetCore": {
+              "target": "Package",
+              "version": "[1.8.6, )"
+            },
             "Hangfire.InMemory": {
               "target": "Package",
               "version": "[0.6.0, )"

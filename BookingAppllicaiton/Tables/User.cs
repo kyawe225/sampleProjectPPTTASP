@@ -9,5 +9,4 @@ public class User:BaseTable
     public string Password { set; get; }
     public string Name { set; get; }
     public string Address { set; get; }
-    public string Credit { set; get; }
 }
