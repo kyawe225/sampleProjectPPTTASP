@@ -30,9 +30,9 @@ public class PackagesRepository
         return packages;
     }
 
-    public PackageUser? getByUserId(long userId,long Id)
+    public PackageUser? getByUserId(long userId)
     {
-        return _context.PackageUsers.Include(p=> p.Package).Where(p => p.UserId == userId && p.PackageId == Id && p.Package.ExpiredDate<=DateTime.Now)
+        return _context.PackageUsers.Include(p=> p.Package).Where(p => p.UserId == userId && p.Package.ExpiredDate<=DateTime.Now)
             .FirstOrDefault(); // default id for user
     }
 

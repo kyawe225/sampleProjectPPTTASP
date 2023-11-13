@@ -32,7 +32,14 @@ public class PackageController : ControllerBase
     public IActionResult Purchase(int Id)
     {
         var claim=HttpContext.User.FindFirst(ClaimTypes.NameIdentifier);
-        var package = _context.getByUserId(Convert.ToInt64(claim?.Value),Id); // default id for user
+        var package = _context.getByUserId(Convert.ToInt64(claim?.Value)); // default id for user
+        if (package?.Id == Id)
+        {
+            return BadRequest(new
+            {
+                message="You already bought that package"
+            });
+        }
         var pack = _context.getById(Id);
         if (package == null && pack != null)
         {
@@ -51,7 +58,7 @@ public class PackageController : ControllerBase
         }
         return BadRequest(new
         {
-            message="Something Wrong"
+            message="User can buy only one package."
         });
     }
 }

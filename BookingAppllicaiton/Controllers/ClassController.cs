@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BookingAppllicaiton.Controllers;
 /// <summary>
-/// userId is for booked
+/// 1 is for booked
 /// 0 is for cancel
 /// 2 is for wait
 /// 3 is for checkin 
@@ -75,23 +75,31 @@ public class ClassController : ControllerBase
                     message = "Class not found"
                 });
             }
-            PackageUser? packageUser=_context.PackageUsers.Where(p => p.UserId == userId).FirstOrDefault();
+            PackageUser? packageUser=_context.PackageUsers.Include(p=> p.Package).Where(p => p.UserId == userId).FirstOrDefault();
             if (model.booked)
             {
-                int registerCount = schedules.Count();
-                bool wait = registerCount == classes.NumberOfPersons ? true : false;
-                _context.Schedules.Add(new()
+                if (classes.Country == packageUser.Package.County)
                 {
-                    Type = wait ? (short)2 : (short)userId,
-                    RegisteredClassId = Id,
-                    UserId = userId
-                });
+                    int registerCount = schedules.Count();
+                    bool wait = registerCount == classes.NumberOfPersons ? true : false;
+                    _context.Schedules.Add(new()
+                    {
+                        Type = wait ? (short)2 : (short)userId,
+                        RegisteredClassId = Id,
+                        UserId = userId
+                    });
                 
-                if (packageUser != null)
-                {
-                    packageUser.Credit = packageUser.Credit - classes.Credit;
-                    _context.Update(packageUser);
+                    if (packageUser != null)
+                    {
+                        packageUser.Credit = packageUser.Credit - classes.Credit;
+                        _context.Update(packageUser);
+                    }
                 }
+
+                return Ok(new
+                {
+                    messsage = "These are not same country"
+                });
             }
             else
             {
@@ -99,6 +107,12 @@ public class ClassController : ControllerBase
                 {
                     schedule.Type = (short)0;
                     _context.Update(schedule);
+                    Schedule? firstPerson=_context.Schedules.Where(p => p.RegisteredClassId == Id && p.Type==3).OrderBy(p=> p.CreatedAt).FirstOrDefault();
+                    if (firstPerson != null)
+                    {
+                        firstPerson.Type = (short)1;
+                        _context.Update(firstPerson);
+                    }
                     if (packageUser != null)
                     {
                         if ((classes.StartDateTime - DateTime.Now).Hours>=4)
