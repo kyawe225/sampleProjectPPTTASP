@@ -78,7 +78,7 @@ public class ClassController : ControllerBase
             PackageUser? packageUser=_context.PackageUsers.Include(p=> p.Package).Where(p => p.UserId == userId).FirstOrDefault();
             if (model.booked)
             {
-                if (classes.Country == packageUser.Package.County)
+                if (classes.Country.Equals(packageUser.Package.County))
                 {
                     int registerCount = schedules.Count();
                     bool wait = registerCount == classes.NumberOfPersons ? true : false;
@@ -95,11 +95,13 @@ public class ClassController : ControllerBase
                         _context.Update(packageUser);
                     }
                 }
-
-                return Ok(new
+                else
                 {
-                    messsage = "These are not same country"
-                });
+                    return Ok(new
+                    {
+                        messsage = "These are not same country"
+                    }); 
+                }
             }
             else
             {

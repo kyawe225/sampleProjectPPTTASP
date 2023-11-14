@@ -71,6 +71,7 @@ builder.Services.AddHangfire(c =>
 );
 builder.Services.AddHangfireServer();
 
+builder.Services.AddScoped<IRefund>(p => new Refund(p.GetRequiredService<DatabaseContext>()));
 
 
 builder.Services.AddAuthentication(p =>
