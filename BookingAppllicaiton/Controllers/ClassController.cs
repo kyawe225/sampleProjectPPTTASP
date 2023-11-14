@@ -1,10 +1,13 @@
 using System.Security.Claims;
+using System.Text;
 using BookingAppllicaiton.Context;
 using BookingAppllicaiton.Model;
 using BookingAppllicaiton.Tables;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
 
 namespace BookingAppllicaiton.Controllers;
 
@@ -20,10 +23,12 @@ namespace BookingAppllicaiton.Controllers;
 public class ClassController : ControllerBase
 {
     private DatabaseContext _context;
+    private IDistributedCache _cache;
 
-    public ClassController(DatabaseContext context)
+    public ClassController(DatabaseContext context,IDistributedCache cache)
     {
         _context = context;
+        _cache = cache;
     }
 
     [Authorize]
@@ -40,6 +45,14 @@ public class ClassController : ControllerBase
     [HttpPost("{Id}")]
     public IActionResult Book(long Id, BookModel model)
     {
+        if (this._cache.Get("Billy") != null)
+        {
+            this._cache.Set("Billy", Encoding.UTF8.GetBytes(Id.ToString()));
+        }
+        else
+        {
+            return Accepted(new Uri($"api/Class/Book/{Id}"),"You are accepted");
+        }
         var claim = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier);
         var userId = Convert.ToInt64(claim?.Value);
         if (ModelState.IsValid)
@@ -53,6 +66,7 @@ public class ClassController : ControllerBase
             {
                 if (schedule != null)
                 {
+                    _cache.Remove("Billy");
                     return Ok(new
                     {
                         message = "Already Booked"
@@ -66,6 +80,7 @@ public class ClassController : ControllerBase
                 .FirstOrDefault();
             if (badSchedule != null)
             {
+                _cache.Remove("Billy");
                 return Ok(new
                 {
                     message = "Overlap Classes"
@@ -74,6 +89,7 @@ public class ClassController : ControllerBase
 
             if (classes == null)
             {
+                _cache.Remove("Billy");
                 return Ok(new
                 {
                     message = "Class not found"
@@ -102,6 +118,7 @@ public class ClassController : ControllerBase
                     }
                     else
                     {
+                        _cache.Remove("Billy");
                         return Ok(
                             new
                             {
@@ -112,6 +129,7 @@ public class ClassController : ControllerBase
                 }
                 else
                 {
+                    _cache.Remove("Billy");
                     return Ok(new
                     {
                         messsage = "These are not same country"
@@ -144,12 +162,13 @@ public class ClassController : ControllerBase
             }
 
             _context.SaveChanges();
+            _cache.Remove("Billy");
             return Ok(new
             {
                 message = "planned the Schedule."
             });
         }
-
+        _cache.Remove("Billy");
         return Ok(new
         {
             message = "Not planned Schedule."
@@ -187,5 +206,6 @@ public class ClassController : ControllerBase
         {
             message = "Over the class Time"
         });
+        
     }
 }
