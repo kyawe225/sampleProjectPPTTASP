@@ -14,6 +14,7 @@ public class HangFireActivator : JobActivator
 
     public override object ActivateJob(Type type)
     {
-        return _serviceProvider.GetService(type);
+        var _scope=_serviceProvider.CreateScope();
+        return _scope.ServiceProvider.GetRequiredService(type);
     }
 }
