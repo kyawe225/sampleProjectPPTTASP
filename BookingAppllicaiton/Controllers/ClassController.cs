@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace BookingAppllicaiton.Controllers;
+
 /// <summary>
 /// 1 is for booked
 /// 0 is for cancel
@@ -29,7 +30,7 @@ public class ClassController : ControllerBase
     [HttpGet]
     public IActionResult Index()
     {
-        List<IGrouping<string, ClassTable>> classes = _context.Classes.GroupBy(p=> p.Country).ToList();
+        List<IGrouping<string, ClassTable>> classes = _context.Classes.GroupBy(p => p.Country).ToList();
         return Ok(new
         {
             data = classes
@@ -44,8 +45,9 @@ public class ClassController : ControllerBase
         if (ModelState.IsValid)
         {
             IEnumerable<Schedule>
-                schedules = _context.Schedules.Include(q=>q.RegisteredClass).Where(p => p.RegisteredClassId == Id).ToList(); //default userID
-            
+                schedules = _context.Schedules.Include(q => q.RegisteredClass).Where(p => p.RegisteredClassId == Id)
+                    .ToList(); //default userID
+
             Schedule? schedule = schedules.Where(p => p.RegisteredClassId == Id && p.UserId == userId).FirstOrDefault();
             if (model.booked)
             {
@@ -59,15 +61,17 @@ public class ClassController : ControllerBase
             }
 
             ClassTable? classes = _context.Classes.Where(p => p.Id == Id).FirstOrDefault();
-            var badSchedule=schedules.Where(p => p.RegisteredClass.StartDateTime >= classes.StartDateTime &&
-                                 p.RegisteredClass.EndDateTime <= classes.StartDateTime).FirstOrDefault();
-            if (badSchedule!=null)
+            var badSchedule = schedules.Where(p => p.RegisteredClass.StartDateTime >= classes.StartDateTime &&
+                                                   p.RegisteredClass.EndDateTime <= classes.StartDateTime)
+                .FirstOrDefault();
+            if (badSchedule != null)
             {
                 return Ok(new
                 {
-                    message="Overlap Classes"
+                    message = "Overlap Classes"
                 });
             }
+
             if (classes == null)
             {
                 return Ok(new
@@ -75,7 +79,9 @@ public class ClassController : ControllerBase
                     message = "Class not found"
                 });
             }
-            PackageUser? packageUser=_context.PackageUsers.Include(p=> p.Package).Where(p => p.UserId == userId).FirstOrDefault();
+
+            PackageUser? packageUser = _context.PackageUsers.Include(p => p.Package).Where(p => p.UserId == userId)
+                .FirstOrDefault();
             if (model.booked)
             {
                 if (classes.Country.Equals(packageUser.Package.County))
@@ -88,11 +94,20 @@ public class ClassController : ControllerBase
                         RegisteredClassId = Id,
                         UserId = userId
                     });
-                
-                    if (packageUser != null)
+
+                    if (packageUser != null || packageUser.Credit > classes.Credit)
                     {
                         packageUser.Credit = packageUser.Credit - classes.Credit;
                         _context.Update(packageUser);
+                    }
+                    else
+                    {
+                        return Ok(
+                            new
+                            {
+                                message = "Not Enough Credit"
+                            }
+                        );
                     }
                 }
                 else
@@ -100,7 +115,7 @@ public class ClassController : ControllerBase
                     return Ok(new
                     {
                         messsage = "These are not same country"
-                    }); 
+                    });
                 }
             }
             else
@@ -109,15 +124,17 @@ public class ClassController : ControllerBase
                 {
                     schedule.Type = (short)0;
                     _context.Update(schedule);
-                    Schedule? firstPerson=_context.Schedules.Where(p => p.RegisteredClassId == Id && p.Type==3).OrderBy(p=> p.CreatedAt).FirstOrDefault();
+                    Schedule? firstPerson = _context.Schedules.Where(p => p.RegisteredClassId == Id && p.Type == 3)
+                        .OrderBy(p => p.CreatedAt).FirstOrDefault();
                     if (firstPerson != null)
                     {
                         firstPerson.Type = (short)1;
                         _context.Update(firstPerson);
                     }
+
                     if (packageUser != null)
                     {
-                        if ((classes.StartDateTime - DateTime.Now).Hours>=4)
+                        if ((classes.StartDateTime - DateTime.Now).Hours >= 4)
                         {
                             packageUser.Credit = packageUser.Credit + classes.Credit;
                             _context.Update(packageUser);
@@ -125,6 +142,7 @@ public class ClassController : ControllerBase
                     }
                 }
             }
+
             _context.SaveChanges();
             return Ok(new
             {
@@ -137,12 +155,14 @@ public class ClassController : ControllerBase
             message = "Not planned Schedule."
         });
     }
+
     [HttpPost]
     public IActionResult CheckIn(int Id)
     {
         var claim = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier);
         var userId = Convert.ToInt64(claim?.Value);
-        Schedule? schedule = _context.Schedules.Include(q=> q.RegisteredClass).Where(p => p.Id == Id && p.UserId == userId && p.Type==(short)userId).FirstOrDefault();
+        Schedule? schedule = _context.Schedules.Include(q => q.RegisteredClass)
+            .Where(p => p.Id == Id && p.UserId == userId && p.Type == (short)userId).FirstOrDefault();
         if (schedule == null)
         {
             return Ok(new
@@ -150,6 +170,7 @@ public class ClassController : ControllerBase
                 message = "Already canceled or checked in"
             });
         }
+
         if (schedule.RegisteredClass.StartDateTime >= DateTime.Now &&
             schedule.RegisteredClass.EndDateTime <= DateTime.Now)
         {
@@ -161,11 +182,10 @@ public class ClassController : ControllerBase
                 message = "Checked in Successfully"
             });
         }
+
         return Ok(new
         {
             message = "Over the class Time"
         });
     }
-    
-    
 }
