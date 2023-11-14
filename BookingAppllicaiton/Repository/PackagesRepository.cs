@@ -21,6 +21,7 @@ public class PackagesRepository
             .OrderBy(p => p.CreatedAt)
             .Select(p => new PackageModel()
             {
+                Id=p.Id,
                 Name = p.Name,
                 Price = p.Price,
                 Credit = p.Credit.ToString(),
@@ -34,6 +35,12 @@ public class PackagesRepository
     {
         return _context.PackageUsers.Include(p=> p.Package).Where(p => p.UserId == userId && p.Package.ExpiredDate<=DateTime.Now)
             .FirstOrDefault(); // default id for user
+    }
+    
+    public IEnumerable<PackageUser> getByUserIdList(long userId)
+    {
+        return _context.PackageUsers.Where(p => p.UserId == userId)
+            .ToList(); // default id for user
     }
 
     public PackageTable? getById(long Id)

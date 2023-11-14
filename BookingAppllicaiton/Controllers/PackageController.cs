@@ -22,6 +22,16 @@ public class PackageController : ControllerBase
     public IActionResult Index()
     {
         var sample = _context.getAll();
+        var claim=HttpContext.User.FindFirst(ClaimTypes.NameIdentifier);
+        var package = _context.getByUserIdList(Convert.ToInt64(claim?.Value));
+        foreach (var i in package)
+        {
+            foreach (var j in sample)
+            {
+                var packge=j.Where(p => p.Id==i.Id).First();
+                packge.RemainCredit = i.Credit;
+            }
+        }
         return Ok(new
         {
             data = sample
